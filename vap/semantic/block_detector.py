@@ -1,53 +1,62 @@
 """
-block_detector.py
+component_detector.py
 
-Detects semantic blocks inside a chapter.
+Builds semantic Component objects from a Block.
 
-Current Version:
-- Groups components into blocks.
-- Starts a new block whenever a component marked as a section
-  heading is encountered.
-- If no section headings exist, the entire chapter becomes one block.
-
-Future versions may add configurable rules.
+Current implementation:
+- Each paragraph becomes a Component.
+- Empty paragraphs are ignored.
+- Future versions can merge paragraphs into richer semantic components
+  (Travel Tip, Timeline, QR Directory, Gallery, etc.).
 """
 
-from vap.models.block import Block
+from vap.models.component import Component
 
 
-class BlockDetector:
+class ComponentDetector:
     """
-    Detect semantic blocks from chapter components.
+    Detect semantic components within a Block.
     """
 
-    def detect(self, chapter):
+    def detect(self, block):
         """
-        Returns a list of Block objects.
+        Convert block paragraphs into Component objects.
         """
 
-        blocks = []
+        components = []
 
-        current_block = Block(
-            title=chapter.title,
-            block_type="chapter"
-        )
+        paragraphs = getattr(block, "paragraphs", [])
 
-        for component in chapter.components:
+        for index, paragraph in enumerate(paragraphs):
 
-            is_section = getattr(component, "component_type", "") == "section"
+            text = getattr(paragraph, "text", "")
 
-            if is_section and current_block.component_count > 0:
+            if text is None:
+                continue
 
-                blocks.append(current_block)
+            text = text.strip()
 
-                current_block = Block(
-                    title=getattr(component, "title", ""),
-                    block_type="section"
-                )
+            if not text:
+                continue
 
-            current_block.add_component(component)
+            component = Component()
 
-        if current_block.component_count > 0:
-            blocks.append(current_block)
+            # Populate only fields that already exist
+            if hasattr(component, "title"):
+                component.title = text
 
-        return blocks
+            if hasattr(component, "text"):
+                component.text = text
+
+            if hasattr(component, "component_type"):
+                component.component_type = "paragraph"
+
+            if hasattr(component, "start_index"):
+                component.start_index = index
+
+            if hasattr(component, "end_index"):
+                component.end_index = index
+
+            components.append(component)
+
+        return components
