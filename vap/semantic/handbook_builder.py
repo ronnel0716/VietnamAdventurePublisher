@@ -5,47 +5,50 @@ Builds the semantic Handbook model from a parsed document.
 """
 
 from vap.models.handbook import Handbook
+from vap.models.chapter import Chapter
+
 from .chapter_detector import ChapterDetector
-from .block_detector import BlockDetector
 from .component_detector import ComponentDetector
 
 
 class HandbookBuilder:
     """
-    Builds the complete semantic handbook.
+    Builds a semantic Handbook from a parsed document.
     """
 
     def __init__(self):
         self.chapter_detector = ChapterDetector()
-        self.block_detector = BlockDetector()
         self.component_detector = ComponentDetector()
 
-    def build(self, document):
-        """
-        Build and return a Handbook model.
-        """
-
+    def build(self, document) -> Handbook:
         handbook = Handbook()
 
         if hasattr(handbook, "title"):
             handbook.title = getattr(document, "title", "")
 
-        chapters = self.chapter_detector.detect(document)
+        chapter_infos = self.chapter_detector.detect(document)
 
-        for chapter in chapters:
+        paragraphs = getattr(document, "paragraphs", [])
 
-            blocks = self.block_detector.detect(chapter)
+        for info in chapter_infos:
 
-            for block in blocks:
-                components = self.component_detector.detect(block)
+            chapter = Chapter(
+                number=info.number,
+                title=info.title,
+                start_index=info.start,
+                end_index=info.end,
+            )
 
-                if hasattr(block, "components"):
-                    block.components = components
+            # Attach document paragraphs belonging to this chapter.
+            chapter.paragraphs = paragraphs[
+                info.start: info.end + 1
+            ]
 
-            if hasattr(chapter, "blocks"):
-                chapter.blocks = blocks
+            # Detect semantic components.
+            chapter.components = self.component_detector.detect(
+                chapter
+            )
 
-        if hasattr(handbook, "chapters"):
-            handbook.chapters = chapters
+            handbook.add_chapter(chapter)
 
         return handbook

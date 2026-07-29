@@ -1,60 +1,104 @@
 """
 word_publisher.py
 
-Publishes a semantic Handbook to a Microsoft Word document.
-
-This is the initial implementation that writes the semantic
-structure to a python-docx Document. Formatting and styling
-will be expanded in later iterations.
+Semantic Word publisher.
 """
+
+from __future__ import annotations
 
 from docx import Document
 
+from .formatter import Formatter
+
 
 class WordPublisher:
-    """
-    Publish a Handbook model to a DOCX document.
-    """
 
-    def publish(self, handbook, output_path=None):
-        """
-        Create a Word document from the Handbook model.
+    def __init__(self):
 
-        Parameters
-        ----------
-        handbook
-            Handbook model.
+        self.formatter = Formatter()
 
-        output_path : str | None
-            If supplied, saves the document.
+    def publish(
+        self,
+        handbook,
+        output_path=None,
+    ):
 
-        Returns
-        -------
-        Document
-            python-docx Document instance.
-        """
+        document = Document()
 
-        doc = Document()
+        self._publish_title(
+            document,
+            handbook,
+        )
 
-        title = getattr(handbook, "title", "")
-
-        if title:
-            doc.add_heading(title, level=0)
-
-        for chapter in getattr(handbook, "chapters", []):
-
-            chapter_title = getattr(chapter, "title", "Untitled Chapter")
-
-            doc.add_heading(chapter_title, level=1)
-
-            for component in getattr(chapter, "components", []):
-
-                text = getattr(component, "text", "")
-
-                if text:
-                    doc.add_paragraph(text)
+        self._publish_chapters(
+            document,
+            handbook,
+        )
 
         if output_path:
-            doc.save(output_path)
 
-        return doc
+            document.save(output_path)
+
+        return document
+
+    # ----------------------------------------------------------
+
+    def _publish_title(
+        self,
+        document,
+        handbook,
+    ):
+
+        title = getattr(
+            handbook,
+            "title",
+            "",
+        )
+
+        if title:
+
+            document.add_heading(
+                title,
+                level=0,
+            )
+
+    # ----------------------------------------------------------
+
+    def _publish_chapters(
+        self,
+        document,
+        handbook,
+    ):
+
+        for chapter in handbook.chapters:
+
+            self._publish_chapter(
+                document,
+                chapter,
+            )
+
+    # ----------------------------------------------------------
+
+    def _publish_chapter(
+        self,
+        document,
+        chapter,
+    ):
+
+        heading = f"Chapter {chapter.number}"
+
+        if chapter.title:
+
+            heading += f" - {chapter.title}"
+
+        document.add_heading(
+            heading,
+            level=1,
+        )
+
+        for component in chapter.components:
+
+            self.formatter.render(
+                document,
+                component,
+            )
