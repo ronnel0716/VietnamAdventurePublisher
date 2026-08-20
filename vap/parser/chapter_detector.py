@@ -16,17 +16,11 @@ class ChapterDetector:
     """
     Detects the main handbook chapters.
 
-    A chapter marker must be exactly:
+    Valid markers:
 
         CHAPTER 1
         CHAPTER 2
-        ...
-
-    Markers such as:
-
-        CHAPTER 4 - Block 2
-
-    are intentionally ignored.
+        CHAPTER 3
     """
 
     CHAPTER_PATTERN = re.compile(
@@ -35,9 +29,6 @@ class ChapterDetector:
     )
 
     def detect(self, document: DocumentModel) -> list[Chapter]:
-        """
-        Detect all chapters within the document.
-        """
 
         chapters: list[Chapter] = []
 
@@ -49,7 +40,7 @@ class ChapterDetector:
 
             match = self.CHAPTER_PATTERN.match(text)
 
-            if match is None:
+            if not match:
                 continue
 
             number = int(match.group(1))
@@ -59,19 +50,20 @@ class ChapterDetector:
                 paragraph.index + 1,
             )
 
+            # Close previous chapter
             if current is not None:
-                current.end_paragraph = paragraph.index - 1
+                current.end_index = paragraph.index - 1
 
             current = Chapter(
                 number=number,
                 title=title,
-                start_paragraph=paragraph.index,
+                start_index=paragraph.index,
             )
 
             chapters.append(current)
 
         if current is not None:
-            current.end_paragraph = len(document) - 1
+            current.end_index = len(document) - 1
 
         return chapters
 
@@ -80,9 +72,6 @@ class ChapterDetector:
         document: DocumentModel,
         start_index: int,
     ) -> str:
-        """
-        Returns the first Heading 1 after the chapter marker.
-        """
 
         for paragraph in document.paragraphs[start_index:]:
 

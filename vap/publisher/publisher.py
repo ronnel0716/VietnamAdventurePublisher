@@ -2,21 +2,11 @@
 publisher.py
 
 Coordinates the publication pipeline.
-
-Pipeline
-
-Document
-    ↓
-Chapter Detection
-    ↓
-Component Detection
-    ↓
-Handbook
 """
 
+from vap.models.handbook import Handbook
 from vap.parser.chapter_detector import ChapterDetector
 from vap.parser.component_detector import ComponentDetector
-from vap.models.handbook import Handbook
 
 
 class Publisher:
@@ -30,21 +20,17 @@ class Publisher:
 
         handbook = Handbook()
 
-        if hasattr(handbook, "title"):
-            handbook.title = getattr(document, "title", "")
+        handbook.title = document.title
 
         chapters = self.chapter_detector.detect(document)
 
         for chapter in chapters:
 
-            components = self.component_detector.detect(chapter)
+            chapter.components = self.component_detector.detect(
+                document=document,
+                chapter=chapter,
+            )
 
-            if hasattr(chapter, "components"):
-                chapter.components = components
-
-            if hasattr(handbook, "add_chapter"):
-                handbook.add_chapter(chapter)
-            elif hasattr(handbook, "chapters"):
-                handbook.chapters.append(chapter)
+            handbook.add_chapter(chapter)
 
         return handbook

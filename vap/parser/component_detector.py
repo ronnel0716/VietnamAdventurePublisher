@@ -1,8 +1,10 @@
 """
 component_detector.py
 
-Creates semantic Component objects from parsed document elements.
+Creates semantic Components from chapter paragraphs.
 """
+
+from __future__ import annotations
 
 from vap.models.component import Component
 from vap.models.enums import ComponentType
@@ -10,34 +12,32 @@ from vap.models.enums import ComponentType
 
 class ComponentDetector:
     """
-    Converts document paragraphs into semantic Components.
+    Creates semantic Components for a chapter.
     """
 
-    def detect(self, chapter):
+    def detect(self, document, chapter):
+
         components = []
 
-        paragraphs = getattr(chapter, "paragraphs", [])
+        paragraphs = document.paragraphs[
+            chapter.start_index : chapter.end_index + 1
+        ]
 
         for paragraph in paragraphs:
 
-            text = getattr(paragraph, "text", "").strip()
+            text = paragraph.text.strip()
 
             if not text:
                 continue
 
-            component = Component()
-
-            if hasattr(component, "type"):
-                component.type = ComponentType.PARAGRAPH
-
-            if hasattr(component, "text"):
-                component.text = text
-
-            if hasattr(component, "style"):
-                component.style = getattr(paragraph, "style", "")
-
-            if hasattr(component, "source"):
-                component.source = paragraph
+            component = Component(
+                component_type=ComponentType.PARAGRAPH,
+                heading="",
+                paragraphs=[text],
+                style_name=paragraph.style,
+                start_index=paragraph.index,
+                end_index=paragraph.index,
+            )
 
             components.append(component)
 
