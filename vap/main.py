@@ -1,5 +1,4 @@
-def main():
-    print("Foundation Pack 1 scaffold")
+from vap.portfolio import main
 
-if __name__=="__main__":
+if __name__ == "__main__":
     main()
